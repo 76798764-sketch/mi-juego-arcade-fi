@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Misión Potencia: Hyper Arcade</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --neon-blue: #00f3ff;
+            --neon-pink: #ff00ff;
+            --neon-green: #00ff00;
+            --neon-red: #ff0000;
+            --neon-yellow: #ffff00;
+            --bg-dark: #050508;
+        }
+
+        body {
+            font-family: 'Press Start 2P', cursive;
+            background-color: var(--bg-dark);
+            color: white;
+            overflow: hidden;
+            user-select: none;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* --- HYPERSPACE BACKGROUND --- */
+        .starfield {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 2px;
+            height: 2px;
+            background: transparent;
+            box-shadow: 
+                0 0 #fff, 
+                0 0 #fff, 
+                0 0 #fff;
+            animation: fly 5s linear infinite;
+            z-index: 0;
+        }
+        
+        .starfield-2 {
+            width: 3px;
+            height: 3px;
+            animation: fly 10s linear infinite;
+        }
+
+        .warp-speed .starfield,
+        .warp-speed .starfield-2 {
+            animation-duration: 0.5s !important;
+            opacity: 0.8;
+        }
+
+        @keyframes fly {
+            from { transform: translate(-50%, -50%) perspective(500px) rotate(0deg) translateZ(-1000px); opacity: 0; }
+            to { transform: translate(-50%, -50%) perspective(500px) rotate(0deg) translateZ(500px); opacity: 1; }
+        }
+
+        /* --- CRT EFFECT (Z-Index adjusted to not block buttons) --- */
+        .crt-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none; /* Crucial so clicks go through */
+            z-index: 50; 
+        }
+
+        /* --- UI CONTAINERS --- */
+        .arcade-border {
+            border: 4px solid var(--neon-blue);
+            box-shadow: 0 0 15px var(--neon-blue), inset 0 0 20px rgba(0, 243, 255, 0.2);
+            background: rgba(0, 0, 0, 0.9);
+            padding: 2px;
+            position: relative;
+            backdrop-filter: blur(5px);
+            z-index: 60; /* Higher than CRT */
+        }
+
+        /* --- BUTTONS --- */
+        .retro-btn {
+            background: #222;
+            border: 4px solid #fff;
+            border-right-color: #555;
+            border-bottom-color: #555;
+            color: var(--neon-yellow);
+            text-transform: uppercase;
+            cursor: pointer;
+            box-shadow: 5px 5px 0px #000;
+            transition: transform 0.1s;
+            font-size: 0.8rem;
+            line-height: 1.5;
+            position: relative;
+            z-index: 100; /* Highest priority */
+        }
+
+        .retro-btn:active:not(:disabled) {
+            transform: translate(4px, 4px);
+            box-shadow: 1px 1px 0px #000;
+        }
+        
+        .retro-btn:hover:not(:disabled) {
+            background: #333;
+            color: #fff;
+        }
+
+        .btn-start {
+            background: var(--neon-red);
+            color: white;
+            animation: pulse-start 1s infinite;
+        }
+        
+        @keyframes pulse-start {
+            0% { box-shadow: 0 0 10px var(--neon-red); }
+            50% { box-shadow: 0 0 25px var(--neon-red); transform: scale(1.05); }
+            100% { box-shadow: 0 0 10px var(--neon-red); }
+        }
+
+        /* --- ANIMATIONS --- */
+        .blink-text {
+            animation: blink 0.5s steps(2, start) infinite;
+        }
+        @keyframes blink {
+            to { visibility: hidden; }
+        }
+
+        .screen-shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-4px, 0, 0); }
+            20%, 80% { transform: translate3d(8px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-16px, 0, 0); }
+            40%, 60% { transform: translate3d(16px, 0, 0); }
+        }
+
+        .pop-in {
+            animation: popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        @keyframes popIn {
+            from { transform: scale(0.5); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        /* --- SPACESHIP --- */
+        .spaceship-container {
+            position: fixed;
+            bottom: 5vh;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 80px;
+            height: 80px;
+            z-index: 5;
+            pointer-events: none;
+            filter: drop-shadow(0 0 10px var(--neon-blue));
+            transition: transform 0.5s ease;
+        }
+
+        .ship-moving {
+            animation: shipWarp 0.5s infinite alternate;
+        }
+
+        @keyframes shipWarp {
+            0% { transform: translateX(-50%) translateY(0) scale(1); }
+            100% { transform: translateX(-50%) translateY(5px) scale(0.95); }
+        }
+
+        .flame {
+            animation: flicker 0.1s infinite alternate;
+        }
+        @keyframes flicker {
+            0% { opacity: 0.8; transform: scaleY(1); }
+            100% { opacity: 1; transform: scaleY(1.5); }
+        }
+
+        .laser {
+            position: absolute;
+            bottom: 50px;
+            left: 50%;
+            width: 6px;
+            height: 20px;
+            background: var(--neon-green);
+            transform: translateX(-50%);
+            opacity: 0;
+            box-shadow: 0 0 10px var(--neon-green);
+            z-index: 4;
+        }
+
+        .shoot-laser {
+            animation: laserShot 0.3s forwards linear;
+        }
+
+        @keyframes laserShot {
+            0% { bottom: 60px; opacity: 1; height: 30px; }
+            100% { bottom: 100vh; opacity: 0; height: 150px; }
+        }
+
+        /* --- MATH TEXT --- */
+        .math-display {
+            font-family: 'Courier New', monospace;
+            font-weight: bold;
+            font-size: 1.5rem;
+            color: var(--neon-green);
+            text-shadow: 2px 2px 0px #000;
+        }
+
+        .hidden-screen {
+            display: none !important;
+        }
+
+        #confetti-canvas {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 40; /* Lower than UI */
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Starfield layers for depth -->
+    <div id="stars-1" class="starfield"></div>
+    <div id="stars-2" class="starfield starfield-2"></div>
+    
+    <div class="crt-overlay"></div>
+    <canvas id="confetti-canvas"></canvas>
+
+    <!-- START SCREEN -->
+    <div id="start-screen" class="z-50 flex flex-col items-center justify-center text-center w-full max-w-4xl p-4 absolute">
+        <h1 class="text-4xl md:text-6xl text-yellow-400 mb-8" style="text-shadow: 4px 4px var(--neon-pink);">
+            MISIÓN<br>POTENCIA
+        </h1>
+        
+        <div class="arcade-border p-6 mb-8 w-full max-w-lg bg-black">
+            <p class="text-green-400 mb-4 text-xs md:text-sm leading-relaxed font-bold">
+                >>> INFORME DE MISIÓN <<<<br><br>
+                1. RESPONDE CORRECTAMENTE PARA AVANZAR.<br>
+                2. SI FALLAS, LA NAVE SE DESTRUYE.<br>
+                3. VELOCIDAD DE RESPUESTA ES CLAVE.
+            </p>
+            <div class="border-t-2 border-dashed border-gray-600 my-4"></div>
+            <p class="text-pink-500 text-xs blink-text">INSERT COIN TO START</p>
+        </div>
+
+        <button onclick="startGame()" class="retro-btn btn-start px-8 py-4 text-xl md:text-2xl mb-12">
+            INICIAR MISIÓN
+        </button>
+
+        <p class="text-gray-500 text-xs">© 2024 MATH ARCADE SYSTEMS</p>
+    </div>
+
+    <!-- GAME SCREEN -->
+    <div id="game-screen" class="hidden-screen z-50 w-full max-w-4xl flex flex-col gap-4 p-2 md:p-4 h-full justify-center pb-24 relative">
+        
+        <!-- Exit Button -->
+        <button onclick="returnToTitle()" class="absolute top-0 right-0 m-2 retro-btn text-[0.6rem] p-2 bg-red-900 border-red-500 text-red-200 opacity-80 hover:opacity-100 z-50">
+            SALIR AL MENÚ
+        </button>
+
+        <!-- HUD -->
+        <div class="flex justify-between items-end mb-2 w-full arcade-border p-4 bg-black">
+            <div class="flex flex-col text-left">
+                <span class="text-red-500 text-xs mb-1">SCORE</span>
+                <span id="score-display" class="text-white text-xl md:text-2xl">00000</span>
+            </div>
+            
+            <div class="flex flex-col items-center">
+                <span class="text-yellow-400 text-xs mb-1">SECTOR</span>
+                <span class="text-white text-xl md:text-2xl"><span id="q-number">1</span>/10</span>
+            </div>
+
+            <div class="flex flex-col text-right">
+                <span class="text-blue-400 text-xs mb-1">ENERGÍA</span>
+                <span id="timer" class="text-white text-xl md:text-2xl">40</span>
+            </div>
+        </div>
+
+        <!-- Timer Bar -->
+        <div class="w-full h-4 border-2 border-white mb-4 p-1 relative">
+            <div id="time-bar" class="h-full bg-green-500 w-full transition-all duration-1000 ease-linear"></div>
+        </div>
+
+        <!-- Main Game Area -->
+        <div id="game-container" class="arcade-border p-6 flex flex-col items-center justify-center flex-grow relative bg-black">
+            
+            <h2 id="question-text" class="text-white text-sm md:text-base text-center mb-6 leading-loose">
+                CARGANDO PREGUNTA...
+            </h2>
+
+            <!-- Math Box -->
+            <div class="w-full bg-gray-900 border-2 border-dashed border-gray-600 p-6 rounded mb-8 flex justify-center items-center min-h-[120px]">
+                <div id="question-expression" class="math-display">
+                    <!-- Math expression -->
+                </div>
+            </div>
+
+            <!-- Options Grid -->
+            <div id="options-container" class="grid grid-cols-1 md:grid-cols-2 gap-4 w-full relative z-20">
+                <!-- Buttons injected via JS -->
+            </div>
+
+            <!-- Feedback Overlay -->
+            <div id="feedback-overlay" class="hidden absolute inset-0 bg-black bg-opacity-95 z-30 flex flex-col items-center justify-center text-center p-4">
+                <h2 id="feedback-title" class="text-4xl mb-4 blink-text" style="text-shadow: 3px 3px 0 #000;"></h2>
+                <p id="feedback-msg" class="text-white text-sm mb-8 leading-loose font-mono"></p>
+                <div id="correct-answer-display" class="text-green-400 text-lg mb-8"></div>
+                <div id="auto-advance-msg" class="text-yellow-400 text-xs mt-4 hidden">
+                    WARP DRIVE ACTIVATED...
+                </div>
+            </div>
+        </div>
+
+        <!-- SPACESHIP (Visual Only) -->
+        <div id="hero-ship" class="spaceship-container">
+            <!-- Laser element -->
+            <div id="ship-laser" class="laser"></div>
+            
+            <!-- SVG Ship -->
+            <svg viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <rect x="28" y="10" width="8" height="12" fill="#e2e8f0"/>
+                <rect x="24" y="22" width="16" height="20" fill="#cbd5e1"/>
+                <rect x="20" y="30" width="4" height="20" fill="#94a3b8"/>
+                <rect x="40" y="30" width="4" height="20" fill="#94a3b8"/>
+                <path d="M12 40H20V54H12V40Z" fill="#3b82f6"/>
+                <path d="M44 40H52V54H44V40Z" fill="#3b82f6"/>
+                <rect x="28" y="26" width="8" height="6" fill="#00f3ff"/>
+                <rect x="8" y="44" width="4" height="16" fill="#1d4ed8"/>
+                <rect x="52" y="44" width="4" height="16" fill="#1d4ed8"/>
+                <path class="flame" d="M26 54H38L32 64L26 54Z" fill="#f59e0b"/>
+                <path class="flame" d="M14 54H18L16 60L14 54Z" fill="#ef4444"/>
+                <path class="flame" d="M46 54H50L48 60L46 54Z" fill="#ef4444"/>
+            </svg>
+        </div>
+    </div>
+
+    <!-- RESULT SCREEN -->
+    <div id="result-screen" class="hidden-screen z-50 flex flex-col items-center justify-center w-full max-w-3xl p-4 text-center absolute">
+        <h2 id="result-title" class="text-4xl text-red-500 mb-8 blink-text" style="text-shadow: 2px 2px #fff;">GAME OVER</h2>
+        
+        <div class="arcade-border p-8 w-full bg-black mb-8">
+            <div class="flex justify-between border-b-2 border-gray-700 pb-4 mb-4">
+                <span class="text-gray-400">PUNTAJE FINAL</span>
+                <span id="final-score" class="text-white text-2xl">0</span>
+            </div>
+            <div class="flex justify-between border-b-2 border-gray-700 pb-4 mb-4">
+                <span class="text-green-500">ACERTADAS</span>
+                <span id="final-correct" class="text-white">0</span>
+            </div>
+            
+            <div class="mt-8 border-2 border-white p-4 bg-gray-900">
+                <p id="achievement-title" class="text-neon-blue text-sm mb-2">RANKING ALCANZADO</p>
+                <p id="achievement-msg" class="text-white text-xs leading-relaxed"></p>
+            </div>
+        </div>
+
+        <!-- REINICIAR MISIÓN Button (Sin animación de movimiento para facilitar el clic) -->
+        <button onclick="startGame()" class="retro-btn px-8 py-4 bg-green-600 text-white w-full max-w-xs">
+            REINICIAR MISIÓN
+        </button>
+
+        <!-- Auto Restart Countdown Text -->
+        <p id="auto-restart-msg" class="text-gray-500 text-xs mt-6 font-mono hidden">
+            VOLVIENDO A LA BASE EN <span id="restart-countdown" class="text-yellow-400 font-bold">10</span>s
+        </p>
+    </div>
+
+    <script>
+        // --- STARFIELD GENERATOR ---
+        function createStars() {
+            const stars1 = document.getElementById('stars-1');
+            const stars2 = document.getElementById('stars-2');
+            let shadow1 = '';
+            let shadow2 = '';
+            
+            for(let i=0; i<100; i++) {
+                shadow1 += `${Math.random()*2000 - 1000}px ${Math.random()*2000 - 1000}px #FFF, `;
+                shadow2 += `${Math.random()*2000 - 1000}px ${Math.random()*2000 - 1000}px #FFF, `;
+            }
+            
+            stars1.style.boxShadow = shadow1.slice(0, -2);
+            stars2.style.boxShadow = shadow2.slice(0, -2);
+        }
+        createStars();
+
+        function setWarpSpeed(active) {
+            if (active) {
+                document.body.classList.add('warp-speed');
+                document.getElementById('hero-ship').classList.add('ship-moving');
+            } else {
+                document.body.classList.remove('warp-speed');
+                document.getElementById('hero-ship').classList.remove('ship-moving');
+            }
+        }
+
+        // --- DATA ---
+        const questions = [
+            {
+                type: 'identificacion',
+                question: "IDENTIFICA: ¿QUÉ TEOREMA ES?",
+                expression: "(3 \\cdot 5)^2",
+                options: ["Pot. de Producto", "Pot. de Cociente", "Pot. de Potencia", "Exponente Cero"],
+                correct: 0
+            },
+            {
+                type: 'identificacion',
+                question: "IDENTIFICA EL TEOREMA:",
+                expression: "\\left(\\frac{8}{4}\\right)^3",
+                options: ["Pot. de Producto", "Pot. de Cociente", "Multiplicación", "Resta Exponentes"],
+                correct: 1
+            },
+            {
+                type: 'identificacion',
+                question: "¿QUÉ TEOREMAS VES AQUÍ?",
+                expression: "\\left(\\frac{a \\cdot b}{c}\\right)^4",
+                options: ["Solo Producto", "Solo Cociente", "AMBOS (Mixto)", "Ninguno"],
+                correct: 2
+            },
+            {
+                type: 'regla',
+                question: "¿CÓMO SE RESUELVE?",
+                expression: "(x \\cdot y)^5",
+                options: ["Suma Exponentes", "Eleva cada factor", "Resta 5", "Divide por 5"],
+                correct: 1
+            },
+            {
+                type: 'regla',
+                question: "EN POTENCIA DE COCIENTE:",
+                expression: "\\left(\\frac{m}{n}\\right)^3",
+                options: ["Solo Numerador", "Solo Denom.", "AMBOS se elevan", "Se restan bases"],
+                correct: 2
+            },
+            {
+                type: 'regla',
+                question: "SI TENEMOS (2² · 3)³, EL 2 ES:",
+                expression: "(2^2 \\cdot 3)^3",
+                options: ["Suma (2+3)", "Multiplica (2x3)", "Divide (2/3)", "Igual"],
+                correct: 1
+            },
+            {
+                type: 'resolucion',
+                question: "RESUELVE:",
+                expression: "(2^2 \\cdot 2)^2",
+                options: ["32", "64", "128", "16"],
+                correct: 1 // 64
+            },
+            {
+                type: 'resolucion',
+                question: "CALCULA:",
+                expression: "\\left(\\frac{10}{2}\\right)^2 + (3 \\cdot 2)^2",
+                options: ["50", "46", "61", "100"],
+                correct: 2 // 61
+            },
+            {
+                type: 'resolucion',
+                question: "SIMPLIFICA:",
+                expression: "\\frac{(2^3 \\cdot 2^2)^2}{2^8}",
+                options: ["2", "4", "8", "1"],
+                correct: 1 // 4
+            },
+            {
+                type: 'resolucion',
+                question: "BOSS BATTLE (FINAL):",
+                expression: "(4 \\cdot 1)^3 - \\left(\\frac{8}{2}\\right)^2",
+                options: ["48", "56", "64", "32"],
+                correct: 0 // 48
+            }
+        ];
+
+        let state = {
+            currentQ: 0,
+            score: 0,
+            correct: 0,
+            wrong: 0,
+            timeLeft: 40,
+            timeLimit: 40,
+            timerInterval: null,
+            autoRestartInterval: null
+        };
+
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+
+        function playSound(type) {
+            if (audioCtx.state === 'suspended') audioCtx.resume();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+            const now = audioCtx.currentTime;
+
+            if (type === 'start') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(1000, now);
+                osc.frequency.linearRampToValueAtTime(1500, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.4);
+                osc.start(now);
+                osc.stop(now + 0.4);
+            } else if (type === 'laser') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(880, now);
+                osc.frequency.exponentialRampToValueAtTime(110, now + 0.2);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.2);
+                osc.start(now);
+                osc.stop(now + 0.2);
+            } else if (type === 'correct') {
+                osc.type = 'square';
+                osc.frequency.setValueAtTime(440, now);
+                osc.frequency.linearRampToValueAtTime(880, now + 0.1);
+                gain.gain.setValueAtTime(0.1, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.3);
+                osc.start(now);
+                osc.stop(now + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(150, now);
+                osc.frequency.linearRampToValueAtTime(50, now + 0.5);
+                gain.gain.setValueAtTime(0.2, now);
+                gain.gain.linearRampToValueAtTime(0, now + 0.5);
+                osc.start(now);
+                osc.stop(now + 0.5);
+            } else if (type === 'warp') {
+                const bufferSize = audioCtx.sampleRate * 1;
+                const buffer = audioCtx.createBuffer(1, bufferSize, audioCtx.sampleRate);
+                const data = buffer.getChannelData(0);
+                for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+                const noise = audioCtx.createBufferSource();
+                noise.buffer = buffer;
+                const noiseGain = audioCtx.createGain();
+                noiseGain.gain.setValueAtTime(0.01, now);
+                noiseGain.gain.linearRampToValueAtTime(0.1, now + 0.5);
+                noiseGain.gain.linearRampToValueAtTime(0, now + 1);
+                noise.connect(noiseGain);
+                noiseGain.connect(audioCtx.destination);
+                noise.start(now);
+            }
+        }
+
+        // --- CORE FUNCTIONS ---
+
+        function clearAllIntervals() {
+            if (state.timerInterval) clearInterval(state.timerInterval);
+            if (state.autoRestartInterval) clearInterval(state.autoRestartInterval);
+            state.timerInterval = null;
+            state.autoRestartInterval = null;
+        }
+
+        function startGame() {
+            clearAllIntervals();
+            
+            // Visual Resets
+            setWarpSpeed(false);
+            document.getElementById('start-screen').classList.add('hidden-screen');
+            document.getElementById('result-screen').classList.add('hidden-screen');
+            document.getElementById('game-screen').classList.remove('hidden-screen');
+            document.getElementById('auto-restart-msg').classList.add('hidden');
+            
+            // State Reset
+            state.score = 0;
+            state.currentQ = 0;
+            state.correct = 0;
+            state.wrong = 0;
+            
+            playSound('start');
+            updateUI();
+            loadQuestion();
+        }
+
+        function returnToTitle() {
+            clearAllIntervals();
+            setWarpSpeed(false);
+            
+            document.getElementById('result-screen').classList.add('hidden-screen');
+            document.getElementById('game-screen').classList.add('hidden-screen');
+            document.getElementById('start-screen').classList.remove('hidden-screen');
+        }
+
+        function loadQuestion() {
+            setWarpSpeed(false); 
+            clearAllIntervals(); // Ensure previous timer is dead
+            
+            state.timeLeft = state.timeLimit;
+            document.getElementById('time-bar').style.width = '100%';
+            document.getElementById('time-bar').className = "h-full bg-green-500 w-full transition-all duration-1000 ease-linear";
+            
+            state.timerInterval = setInterval(() => {
+                state.timeLeft--;
+                document.getElementById('timer').innerText = state.timeLeft;
+                const pct = (state.timeLeft / state.timeLimit) * 100;
+                const bar = document.getElementById('time-bar');
+                bar.style.width = `${pct}%`;
+
+                if(state.timeLeft <= 10) bar.className = "h-full bg-red-500 w-full transition-all duration-1000 ease-linear";
+                else if (state.timeLeft <= 20) bar.className = "h-full bg-yellow-400 w-full transition-all duration-1000 ease-linear";
+
+                if (state.timeLeft <= 0) handleTimeout();
+            }, 1000);
+
+            const q = questions[state.currentQ];
+            document.getElementById('question-text').innerText = q.question;
+            document.getElementById('q-number').innerText = state.currentQ + 1;
+
+            let mathHTML = q.expression
+                .replace(/\\cdot/g, '·')
+                .replace(/\\left\(/g, '(')
+                .replace(/\\right\)/g, ')')
+                .replace(/\\frac{([^}]+)}{([^}]+)}/g, '<span style="display:inline-block; vertical-align:middle; text-align:center; margin:0 5px;"><span style="display:block; border-bottom:2px solid #00ff00;">$1</span><span style="display:block;">$2</span></span>')
+                .replace(/\^(\d+)/g, '<sup>$1</sup>');
+            
+            document.getElementById('question-expression').innerHTML = mathHTML;
+            document.getElementById('feedback-overlay').classList.add('hidden');
+            document.getElementById('auto-advance-msg').classList.add('hidden');
+            document.getElementById('game-container').classList.remove('screen-shake');
+
+            const opts = document.getElementById('options-container');
+            opts.innerHTML = '';
+            
+            let indexedOptions = q.options.map((opt, i) => ({ text: opt, originalIndex: i }));
+            indexedOptions.sort(() => Math.random() - 0.5);
+
+            indexedOptions.forEach((optObj) => {
+                const btn = document.createElement('button');
+                btn.className = "retro-btn p-4 w-full h-full text-xs md:text-sm break-words";
+                btn.innerText = optObj.text;
+                btn.onclick = () => checkAnswer(optObj.originalIndex, btn);
+                opts.appendChild(btn);
+            });
+        }
+
+        function handleTimeout() {
+            clearAllIntervals();
+            playSound('wrong');
+            state.wrong++;
+            showFeedback(false, true);
+        }
+
+        function checkAnswer(originalIdx, btn) {
+            clearAllIntervals(); // Stop timer immediately
+            const q = questions[state.currentQ];
+            
+            const allBtns = document.querySelectorAll('.retro-btn');
+            allBtns.forEach(b => b.disabled = true);
+
+            const laser = document.getElementById('ship-laser');
+            laser.classList.remove('shoot-laser');
+            void laser.offsetWidth; 
+            laser.classList.add('shoot-laser');
+            playSound('laser');
+
+            setTimeout(() => {
+                if (originalIdx === q.correct) {
+                    state.score += 2;
+                    state.correct++;
+                    playSound('correct');
+                    fireConfetti();
+                    btn.style.background = "#00ff00";
+                    btn.style.color = "#000";
+                    showFeedback(true);
+                    
+                    setWarpSpeed(true);
+                    playSound('warp');
+                    document.getElementById('auto-advance-msg').classList.remove('hidden');
+                    setTimeout(nextQuestion, 2500); 
+
+                } else {
+                    state.wrong++;
+                    playSound('wrong');
+                    btn.style.background = "#ff0000";
+                    btn.style.color = "#fff";
+                    document.getElementById('game-container').classList.add('screen-shake');
+                    showFeedback(false);
+                    setTimeout(endGame, 3000); 
+                }
+                updateUI();
+            }, 300);
+        }
+
+        function showFeedback(isCorrect, isTimeout = false) {
+            const overlay = document.getElementById('feedback-overlay');
+            const title = document.getElementById('feedback-title');
+            const msg = document.getElementById('feedback-msg');
+            const correctDisplay = document.getElementById('correct-answer-display');
+            
+            overlay.classList.remove('hidden');
+            overlay.classList.add('pop-in');
+
+            const q = questions[state.currentQ];
+
+            if (isCorrect) {
+                title.innerText = "¡CORRECTO!";
+                title.className = "text-4xl mb-4 blink-text text-green-400";
+                msg.innerText = "SISTEMAS AL 100%. AVANZANDO...";
+                correctDisplay.innerText = "";
+            } else {
+                title.innerText = isTimeout ? "TIEMPO AGOTADO" : "FALLA CRÍTICA";
+                title.className = "text-4xl mb-4 blink-text text-red-500";
+                msg.innerText = "NAVE DESTRUIDA.";
+                correctDisplay.innerHTML = `RESPUESTA CORRECTA:<br>${q.options[q.correct]}`;
+            }
+        }
+
+        function nextQuestion() {
+            state.currentQ++;
+            if (state.currentQ < questions.length) {
+                loadQuestion();
+            } else {
+                endGame(true);
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('score-display').innerText = state.score.toString().padStart(5, '0');
+        }
+
+        function endGame(victory = false) {
+            clearAllIntervals();
+            document.getElementById('game-screen').classList.add('hidden-screen');
+            document.getElementById('result-screen').classList.remove('hidden-screen');
+            setWarpSpeed(false);
+            
+            document.getElementById('final-score').innerText = state.score;
+            document.getElementById('final-correct').innerText = state.correct;
+
+            const resultTitle = document.getElementById('result-title');
+            if(victory) {
+                resultTitle.innerText = "¡MISIÓN CUMPLIDA!";
+                resultTitle.className = "text-4xl text-green-500 mb-8 blink-text";
+                fireConfetti();
+            } else {
+                resultTitle.innerText = "GAME OVER";
+                resultTitle.className = "text-4xl text-red-500 mb-8 blink-text";
+            }
+
+            const title = document.getElementById('achievement-title');
+            const msg = document.getElementById('achievement-msg');
+            
+            if (state.score <= 10) {
+                title.innerText = "RANGO: CADETE ESPACIAL";
+                msg.innerText = "EN PROCESO DE APRENDIZAJE. SIGUE PRACTICANDO.";
+            } else if (state.score <= 14) {
+                title.innerText = "RANGO: PILOTO OFICIAL";
+                msg.innerText = "LOGRO ESPERADO. VAS POR BUEN CAMINO.";
+            } else if (state.score <= 18) {
+                title.innerText = "RANGO: COMANDANTE";
+                msg.innerText = "LOGRO DESTACADO. ¡MUY BUEN DESEMPEÑO!";
+            } else {
+                title.innerText = "RANGO: ALMIRANTE GALÁCTICO";
+                msg.innerText = "LOGRO SOBRESALIENTE. ¡ERES UN EXPERTO EN POTENCIAS!";
+            }
+
+            // Auto Return Logic
+            let countdown = 10;
+            const msgEl = document.getElementById('auto-restart-msg');
+            msgEl.innerHTML = 'VOLVIENDO A LA BASE EN <span id="restart-countdown" class="text-yellow-400 font-bold">10</span>s';
+            msgEl.classList.remove('hidden');
+
+            const countdownEl = document.getElementById('restart-countdown');
+
+            state.autoRestartInterval = setInterval(() => {
+                countdown--;
+                if(countdownEl) countdownEl.innerText = countdown;
+                if (countdown <= 0) {
+                    returnToTitle();
+                }
+            }, 1000);
+        }
+
+        // --- CONFETTI ---
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        canvas.width = window.innerWidth;
+        canvas.height = window.innerHeight;
+        let particles = [];
+
+        function fireConfetti() {
+            particles = [];
+            for(let i=0; i<150; i++) {
+                particles.push({
+                    x: window.innerWidth/2, y: window.innerHeight/2,
+                    vx: (Math.random()-0.5)*25, vy: (Math.random()-0.5)*25,
+                    color: `hsl(${Math.random()*360}, 100%, 50%)`,
+                    life: 100,
+                    size: Math.random() * 5 + 2
+                });
+            }
+            animateParticles();
+        }
+
+        function animateParticles() {
+            if(particles.length === 0) return;
+            ctx.clearRect(0,0,canvas.width, canvas.height);
+            for(let i=0; i<particles.length; i++) {
+                let p = particles[i];
+                p.x += p.vx; p.y += p.vy;
+                p.vy += 0.2; 
+                p.vx *= 0.96; 
+                p.vy *= 0.96;
+                p.life--;
+                
+                ctx.fillStyle = p.color;
+                ctx.fillRect(p.x, p.y, p.size, p.size);
+                
+                if(p.life <= 0) { particles.splice(i, 1); i--; }
+            }
+            requestAnimationFrame(animateParticles);
+        }
+        
+        window.addEventListener('resize', () => {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            createStars();
+        });
+    </script>
+</body>
+</html>
